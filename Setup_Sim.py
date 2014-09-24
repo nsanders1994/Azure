@@ -64,14 +64,14 @@ def sub_menu():
 
         if user_input == '1':
             # creates a VM under client's cloud service, running the EMOD simulation
-            vm_name, proj_name = setup_proj()
-            simulation(vm_name, 'EMOD')
+            vm_name, proj_name, cores = setup_proj()
+            simulation(vm_name, 'EMOD', cores)
             update_proj_file(vm_name, proj_name)
             sub_menu()
         elif user_input == '2':
             # creates a VM under client's cloud service, running the Open Malaria simulation
-            vm_name, proj_name = setup_proj()
-            simulation(vm_name, 'OM')
+            vm_name, proj_name, cores = setup_proj()
+            simulation(vm_name, 'OM', cores)
             update_proj_file(vm_name, proj_name)
             sub_menu()
         elif user_input == '3':
@@ -496,7 +496,15 @@ def setup_proj():
         # Simulation name is valid
         upload_input(vm_name)
 
-        return vm_name, project_name
+        while 1:
+            cores = int(raw_input("\nHow many cores? (Options: 1, 2, 4, 8, 16): "))
+
+            if cores not in (1, 2, 4, 8, 16):
+                print('Not a valid core size.\n')
+            else:
+                break
+
+        return vm_name, project_name, cores
 
 
 def ARG_upload_input(vm_name, input_path):
@@ -601,11 +609,12 @@ def zip_files(inputs):
             # If there is one input file...
             if os.path.isfile(inputs_folder_name):
                 z.write(inputs_folder_name)
-            # If there are multiple input files in a folder...
+            # If there are multiple input files/folders in the given folder...
             else:
-                for user_input in os.listdir(inputs_folder_name):
-                    os.chdir(inputs)
-                    z.write(user_input)
+                for base, dirs, files in os.walk(inputs):
+                    for f in files:
+                        fn = os.path.join(base, f)
+                        z.write(fn, f)
 
             z.close()
             zipped_inputs = inputs + '.zip'
@@ -636,7 +645,7 @@ def remove_proj(vm):
         f.close()
 
 
-def simulation(vm_name, sim_type, arg=False, del_VM=True):
+def simulation(vm_name, sim_type,  cores_requested, arg=False, del_VM=True):
 
         """
         Uploads a client's input files for a new simulation to the client's storage container and then creates a VM
@@ -657,7 +666,7 @@ def simulation(vm_name, sim_type, arg=False, del_VM=True):
                 exit(1)
         else:
             if sim_type == "EMOD":
-                image_name = 'no-delete-EMOD-OS-os-2014-09-17'
+                image_name = 'no-delete-EMOD2-os-2014-09-19'
             elif sim_type == "OM":
                 image_name = 'no-delete-Mock-os-2014-09-17'
             elif sim_type == "mock":
@@ -696,40 +705,69 @@ def simulation(vm_name, sim_type, arg=False, del_VM=True):
         endpoint_config.input_endpoints.input_endpoints.append(endpoint1)
 
         ############# Create VM #############
-
+        if cores_requested == 1:
+            core_size = 'Small'
+        elif cores_requested == 2:
+            core_size = 'Medium'
+        elif cores_requested == 4:
+            core_size = 'Large'
+        elif cores_requested == 8:
+            core_size = 'Extra Large'
+        elif cores_requested == 16:
+            core_size = 'A9'
+        else:
+            stderr.write('Core size not available. Options: 1, 2, 4, 8, 16\n')
+            exit(1)
+            
         # Check that there are cores available
-        subscription = sms.get_subscription()
-        cores_available = subscription.max_core_count - subscription.current_core_count
+        timed_out = True
+        message_given = False
+        start_time = time()
+        while (time() - start_time) < 180:
+            subscription = sms.get_subscription()
+            cores_available = subscription.max_core_count - (subscription.current_core_count + cores_requested)
+            if cores_available < 0:
+                if not message_given:
+                    print 'No cores are available for usage at this time. Please, wait until a ' + str(cores_requested) + '-core VM can be generated...\n'
+                    message_given = True
+            else:
+                print "\nCreating VM..."
+                timed_out = False
+                break
 
-        if not cores_available:
-            stderr.write('No cores are available for usage at this time. Please, wait until a VM can be generated...')
-
-        print "\nCreating VM..."
-
-        # If there's a VM running on the client's service, add a VM to the pre-existing deployment
-        wait = True
-        first = True
+        if timed_out:
+            stderr.write("Request timed out: Windows Azure is a bit backlogged at the moment. Try again later.")
+            sleep(0.5)
+            if arg:
+                exit(1)
+            else:
+                sub_menu()
 
         # Wait until a role can be added to the deployment
-        while wait:
+        timed_out = True
+        start_time = time()
+        deployment_result = 0
+        while (time() - start_time) < 180: # will try to create role for 3 minutes before timing out
             service = sms.get_hosted_service_properties(username, True)
+            # If there's a VM running on the client's service, add a VM to the pre-existing deployment
             if service.deployments:
                 try:
-                    result = sms.add_role(
+                    deployment_result = sms.add_role(
                         service_name=username,
                         deployment_name=username,
                         role_name=vm_name,
                         system_config=windows_config,
                         os_virtual_hard_disk=os_hd,
-                        role_size='Small')
-                    wait = False
+                        role_size=core_size)
+                    timed_out = False
+                    break
 
                 except WindowsAzureConflictError:
                     if first:
                         print '\nWindows Azure is currently performing an operation on this deployment that requires ' \
                               'exclusive access. \nPlease, wait...'
                         first = False
-
+                '''
                 except:
                     stderr.write("There was an error creating a virtual machine to run your simulation.")
                     sleep(0.5)
@@ -737,14 +775,11 @@ def simulation(vm_name, sim_type, arg=False, del_VM=True):
                         exit(1)
                     else:
                         sub_menu()
-            else:
-                wait = False
-
-        # If no VMs are deployed, a VM is deployed on the client's service
-        service = sms.get_hosted_service_properties(username, True)
-        if not service.deployments:
-            try:
-                result = sms.create_virtual_machine_deployment(
+                '''
+            # If no VMs are deployed, a VM is deployed on the client's service
+            elif not service.deployments:
+                try:
+                    deployment_result = sms.create_virtual_machine_deployment(
                         service_name=username,
                         deployment_name=username,
                         deployment_slot='production',
@@ -753,18 +788,28 @@ def simulation(vm_name, sim_type, arg=False, del_VM=True):
                         network_config=endpoint_config,
                         system_config=windows_config,
                         os_virtual_hard_disk=os_hd,
-                        role_size='Small')
+                        role_size=core_size)
+                    timed_out = False
+                    break
 
-            except:
-                stderr.write("There was an error creating a virtual machine to run your simulation.")
-                sleep(0.5)
-                if arg:
-                    exit(1)
-                else:
-                    sub_menu()
+                except:
+                    stderr.write("There was an error creating a virtual machine to run your simulation.")
+                    sleep(0.5)
+                    if arg:
+                        exit(1)
+                    else:
+                        sub_menu()
+
+        if timed_out:
+            stderr.write("Request timed out: Windows Azure is a bit backlogged at the moment. Try again later.")
+            sleep(0.5)
+            if arg:
+                exit(1)
+            else:
+                sub_menu()
 
         # Check that the VM was created properly
-        status = sms.get_operation_status(result.request_id)
+        status = sms.get_operation_status(deployment_result.request_id)
         try:
             stderr.write(vars(status.error))
             exit(1)
@@ -1066,12 +1111,12 @@ if len(sys.argv) > 1:
                         help="Turn off automatic cleanup of VM instances (VMs not deleted)")
 
     options_group = parser.add_mutually_exclusive_group()
-    options_group.add_argument("-sOM", "--OpenMalaria", nargs=2, type=str, action="store",
-                               help="Runs new Open Malaria simulation; must provide file path to input folder and "
-                                    "a new simulation name")
-    options_group.add_argument("-sE", "--EMOD", nargs=2, type=str, action="store",
-                               help="Runs new EMOD simulation; must provide file path to input folder and a new "
-                                    "simulation name")
+    options_group.add_argument("-sOM", "--OpenMalaria", nargs=3, type=str, action="store",
+                               help="Runs new Open Malaria simulation; must provide file path to input folder,"
+                                    "a new simulation name, and the number of cores needed.")
+    options_group.add_argument("-sE", "--EMOD", nargs=3, type=str, action="store",
+                               help="Runs new EMOD simulation; must provide file path to input folder, a new "
+                                    "simulation name, and the number of cores needed.")
     options_group.add_argument("-r", "--get_results", nargs=1, type=str, action="store",
                                help="Get simulation results; must provide simulation name")
     options_group.add_argument("-d", "--delete", action="store_true",
@@ -1123,17 +1168,17 @@ else:
 
     if args.EMOD:
         vm_name = ARG_setup_proj(args.EMOD[1], args.EMOD[0].strip('"'))
-        simulation(vm_name, "EMOD", True, del_VM)
+        simulation(vm_name, "EMOD", int(args.EMOD[2]), True, del_VM)
         update_proj_file(vm_name, args.EMOD[1])
 
     elif args.OpenMalaria:
         vm_name = ARG_setup_proj(args.OpenMalaria[1], args.OpenMalaria[0])
-        simulation(vm_name, "OM", True, del_VM)
+        simulation(vm_name, "OM", int(args.OpenMalaria[2]), True, del_VM)
         update_proj_file(vm_name, args.OpenMalaria[1])
 
     elif args.mock_model:
         vm_name = ARG_setup_proj(args.mock_model[1], args.mock_model[0])
-        simulation(vm_name, "mock", True, del_VM)
+        simulation(vm_name, "mock", 1, True, del_VM)
         update_proj_file(vm_name, args.mock_model[1])
 
     elif args.get_results:
