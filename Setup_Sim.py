@@ -1099,8 +1099,8 @@ comp_user = getuser()
 UI = True
 
 if len(sys.argv) > 1:
-    use_string = 'Setup_Sim.py [-h] [-new] username [ -d | [-ncln] -sE INPUT_FOLDER SIMULATION_NAME | [-ncln] ' \
-                 '-sOM INPUT_FOLDER SIMULATION_NAME | [-ncln] -m INPUT_FOLDER SIMULATION_NAME | -r SIMULATION_NAME ]'
+    use_string = 'Setup_Sim.py [-h] [-new] username [ -d | [-ncln] -sE INPUT_FOLDER  SIMULATION_NAME  CORE_SIZE | [-ncln] ' \
+                 '-sOM INPUT_FOLDER  SIMULATION_NAME  CORE_SIZE | [-ncln] -m INPUT_FOLDER  SIMULATION_NAME  CORE_SIZE| -r SIMULATION_NAME ]'
     parser = argparse.ArgumentParser(usage=use_string)
 
     parser.add_argument("-new", "--new_user", action="store_true",
