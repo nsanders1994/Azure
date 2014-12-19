@@ -19,7 +19,7 @@ class AzureUser:
         self.curr_sim = AzureSimulation.AzureSimulation()
         self.email = ""
         self.user_info = {}
-#add_sim(args.EMOD[1], args.EMOD[0], "EMOD", True, del_VM) is 0:
+
     def add_sim(self, proj_name="", user_input="", sim_type="mock", ARG=False, DEL=False):
         """
         Adds simulation to the user's list of projects. Calls setup_sim and curr_sim.simulation to configure the new
@@ -57,6 +57,10 @@ class AzureUser:
                 stderr.write("Simulation name already exists.")
                 exit(1)
             else:
+                self.user_info["username"] = self.username
+                self.user_info["email"]    = self.email
+                self.user_info["sim"]      = self.curr_sim.name
+
                 self.curr_sim.upload_input(self.user_info)
                 success = self.curr_sim.simulation(self.username, sim_type, ARG, DEL)
                 return success

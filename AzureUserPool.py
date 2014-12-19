@@ -205,7 +205,7 @@ class AzureUserPool:
             else:
                 self.curr_user = self.user_list[name]
         else:
-            while 1:
+            while True:
                 name = raw_input('\nEnter username: ')
 
                 # Check username exists
@@ -307,10 +307,10 @@ class AzureUserPool:
                     else:
                         return 0
 
-                path = 'C:/Users/' + comp_user + '/Simulations/' + self.curr_user.username + '/' + self.curr_user.username + \
-                       '_simulations.txt'
-                if os.path.exists(path):
-                    os.remove(path)
+                #path = 'C:/Users/' + comp_user + '/Simulations/' + self.curr_user.username + '/' + self.curr_user.username + \
+                #       '_simulations.txt'
+                #if os.path.exists(path):
+                #    os.remove(path)
 
                 self.user_list.pop(self.curr_user.username)
                 return 1;

@@ -35,7 +35,6 @@ def menu():
     elif user_input == '2':
         # creates cloud service and storage container using client specified username
         goto = users.add_user()
-        print goto
         pickle.dump(users.user_list, file(f, 'w'))
     elif user_input == '3':
         quit(0)
@@ -60,7 +59,7 @@ def sub_menu(user):
     user_input = raw_input(
         '\n########### MENU ########### \n'
         '(1) Start new EMOD simulation\n'
-        '(2) Start new Open Malaria simulaion\n'
+        '(2) Start new Open Malaria simulation\n'
         '(3) Check for simulation results\n'
         '(4) Delete account\n'
         '(5) Logout\n'
@@ -142,7 +141,7 @@ UI = True
 
 if len(sys.argv) > 1:
     use_string = 'Setup_Sim.py [-h] [-new] username [ -d | [-ncln] -sE INPUT_FOLDER SIMULATION_NAME N_CORES| [-ncln] ' \
-                 '-sOM INPUT_FOLDER SIMULATION_NAME N_CORES | [-ncln] -m INPUT_FOLDER SIMULATION_NAME | -r SIMULATION_NAME ]'
+                 '-sOM INPUT_FOLDER SIMULATION_NAME N_CORES | [-ncln] -m INPUT_FOLDER SIMULATION_NAME N_CORES | -r SIMULATION_NAME ]'
     parser = argparse.ArgumentParser(usage=use_string)
 
     parser.add_argument("-new", "--new_user", action="store_true",
@@ -211,15 +210,15 @@ else:
     if args.EMOD:
 
         if users.curr_user.add_sim(args.EMOD[1], args.EMOD[0], "EMOD", True, del_VM) is 0:
-            users.curr_user.save_sim()
+            users.save_user()
             pickle.dump(users.user_list, file(f, 'w'))
     elif args.OpenMalaria:
         if users.curr_user.add_sim(args.OpenMalaria[1], args.OpenMalaria[0], "OM", True, del_VM) is 0:
-            users.curr_user.save_sim()
+            users.save_user()
             pickle.dump(users.user_list, file(f, 'w'))
     elif args.mock_model:
         if users.curr_user.add_sim(args.mock_model[1], args.mock_model[0], "mock", True, del_VM) is 0:
-            users.curr_user.save_sim()
+            users.save_user()
             pickle.dump(users.user_list, file(f, 'w'))
     elif args.get_results:
         users.curr_user.user_requestSimResults(True)

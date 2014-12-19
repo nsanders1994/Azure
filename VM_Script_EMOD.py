@@ -4,15 +4,9 @@ from azure.servicemanagement import *
 from azure.storage import *
 from subprocess import call
 from os import chdir
-import pickle
+import os
 import socket
 import zipfile
-import smtplib, os
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email.utils import formatdate
-from email import encoders
 
 def send_mail( send_from, send_to, subject, text, files=[], server="localhost", port=587, username='', password='', isTls=True):
     msg = MIMEMultipart()
@@ -35,9 +29,11 @@ def send_mail( send_from, send_to, subject, text, files=[], server="localhost", 
     smtp.login(username,password)
     smtp.sendmail(send_from, send_to, msg.as_string())
     smtp.quit()
+    
+def upload_results():
 
+    ####### Upload Final Results ########
 
-def zip_results():
     # Zip output directory
     z = zipfile.ZipFile(user_info["sim"] + '_Results.zip', "w", zipfile.ZIP_DEFLATED)
     for result in os.listdir('Output'):
@@ -45,35 +41,16 @@ def zip_results():
         z.write(result)
     z.close()
 
-
-def upload_results():
-    ####### Upload Final Results ########
     result = 'r-' + vm_name
     blob_service.put_block_blob_from_path(container_name, result, 'c:/Users/Public/Sim/Output/' + user_info["sim"] + '_Results.zip')
 
 
 def download_input():
-    blob_service.get_blob_to_path(container_name, vm_name, 'c:/Users/Public/Sim/Input.zip')
+    #blob_service.get_blob_to_path(container_name, vm_name, 'c:/Users/Public/Sim/Input.zip')
     chdir("C:/Users/Public/Sim")
-    z = zipfile.ZipFile('Input.zip', 'r')
+    z = zipfile.ZipFile('SimInput.zip', 'r')
     z.extractall()
     z.close()
-
-
-def delete_vm():
-    hosted_service = sms.get_hosted_service_properties(service_name=username, embed_detail=True)
-
-    if hosted_service.deployments:
-        deployment = sms.get_deployment_by_name(username, username)
-        roles = deployment.role_list
-
-        for instance in roles:
-            if vm_name == instance.role_name:
-                if len(roles) == 1:
-                    sms.delete_deployment(service_name=username, deployment_name=username)
-                else:
-                    sms.delete_role(service_name=username, deployment_name=username, role_name=vm_name)
-                    break
 
 
 ########################################################################################################################
@@ -111,16 +88,12 @@ except:
     output.write('Could not download input from the cloud.\n')
     output.close()
     upload_results()
-    delete_vm()
 
 ########### Run Simulation ##########
 call(["eradication.exe", "-C",  "config.json", "-O", "Output"], stdout=output)
 output.close()
 
-
 try:
-    zip_results()
-
     ########### Upload Results ##########
     upload_results()
 
@@ -138,6 +111,7 @@ try:
                password    = 'Lgfak_1994',
                isTls       = True)
 
-############# Delete VM #############
+############# Exit Script #############
 finally:
-    delete_vm()
+    exit(1)
+

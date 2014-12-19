@@ -49,14 +49,13 @@ class AzureSimulation:
         inputs_zip = AzureTools.zip_files(user_info["username"], norm_inputs)
 
         # Try uploading the specified input
-        #try:
-        print user_info["username"]
-        blob_service.put_block_blob_from_path(user_info["username"].lower(), self.vm_id, inputs_zip)
-        '''
+        try:
+            blob_service.put_block_blob_from_path(user_info["username"].lower(), self.vm_id, inputs_zip)
+
         except:
             stderr.write('An error occurred uploading your input.')
             exit(1)
-        '''
+
     def generate_vm_id(self, username):
         """
         Generates a name for the VM that will run the simulation. The name is created by add random hex to the client's
@@ -78,12 +77,10 @@ class AzureSimulation:
         :return:
         """
 
-        #print self.name
         valid = True
 
         # Check that the project name is valid
         val = search('[ <>:"/\\\|?*]', name)
-        print val
         if val:
             valid = False
 
@@ -103,21 +100,21 @@ class AzureSimulation:
         ######### Create OS Hard Disk #########
         if DEL:
             if sim_type == "EMOD":
-                image_name = 'EMOD-w-email-os-2014-11-25' #'EMOD-OS-os-2014-07-09'
+                image_name = 'EMOD-OS-os-2014-07-09'
             elif sim_type == "OM":
-                image_name = 'Mock-w-email-os-2014-11-25' #'mock-model2-os-2014-07-10'
+                image_name = 'mock-model2-os-2014-07-10'
             elif sim_type == "mock":
-                image_name = 'Mock-w-email-os-2014-11-25' #'mock-model2-os-2014-07-10'
+                image_name = 'mock-model2-os-2014-07-10'
             else:
                 stderr.write('Error')
                 exit(1)
         else:
             if sim_type == "EMOD":
-                image_name = 'no-del-EMOD-w-email-os-2014-11-25' #'no-delete-EMOD2-os-2014-09-19'
+                image_name = 'no-delete-EMOD2-os-2014-09-19'
             elif sim_type == "OM":
-                image_name = 'no-del-Mock-w-email-os-2014-11-25' #'no-delete-Mock-os-2014-09-17'
+                image_name = 'no-delete-Mock-os-2014-09-17'
             elif sim_type == "mock":
-                image_name = 'no-del-Mock-w-email-os-2014-11-25' #'no-delete-Mock-os-2014-09-17'
+                image_name = 'no-delete-Mock-os-2014-09-17'
             else:
                 stderr.write('Error')
                 exit(1)
@@ -199,17 +196,17 @@ class AzureSimulation:
             service = sms.get_hosted_service_properties(username, True)
             # If there's a VM running on the client's service, add a VM to the pre-existing deployment
             if service.deployments:
-                #try:
-                deployment_result = sms.add_role(
-                    service_name=username,
-                    deployment_name=username,
-                    role_name=self.vm_id,
-                    system_config=windows_config,
-                    os_virtual_hard_disk=os_hd,
-                    role_size=core_size)
-                timed_out = False
-                    #break
-                '''
+                try:
+                    deployment_result = sms.add_role(
+                        service_name=username,
+                        deployment_name=username,
+                        role_name=self.vm_id,
+                        system_config=windows_config,
+                        os_virtual_hard_disk=os_hd,
+                        role_size=core_size)
+                    timed_out = False
+                    break
+
                 except WindowsAzureConflictError:
                     if first:
                         print '\nWindows Azure is currently performing an operation on this deployment that requires ' \
@@ -223,24 +220,23 @@ class AzureSimulation:
                         exit(1)
                     else:
                         return 1
-                '''
+
 
             # If no VMs are deployed, a VM is deployed on the client's service
             elif not service.deployments:
-                #try:
-                deployment_result = sms.create_virtual_machine_deployment(
-                    service_name=username,
-                    deployment_name=username,
-                    deployment_slot='production',
-                    label=self.vm_id,
-                    role_name=self.vm_id,
-                    network_config=endpoint_config,
-                    system_config=windows_config,
-                    os_virtual_hard_disk=os_hd,
-                    role_size=core_size)
-                timed_out = False
-                #break
-                '''
+                try:
+                    deployment_result = sms.create_virtual_machine_deployment(
+                        service_name=username,
+                        deployment_name=username,
+                        deployment_slot='production',
+                        label=self.vm_id,
+                        role_name=self.vm_id,
+                        network_config=endpoint_config,
+                        system_config=windows_config,
+                        os_virtual_hard_disk=os_hd,
+                        role_size=core_size)
+                    timed_out = False
+                    break
                 except:
                     stderr.write("There was an error creating a virtual machine to run your simulation.")
                     sleep(0.5)
@@ -248,7 +244,7 @@ class AzureSimulation:
                         exit(1)
                     else:
                         return 1
-                '''
+
         if timed_out:
             stderr.write("Request timed out: Windows Azure is a bit backlogged at the moment. Try again later.")
             sleep(0.5)

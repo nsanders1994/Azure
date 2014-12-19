@@ -9,7 +9,6 @@ import shutil
 # The current user on the computer; used to access the right folder under C:/Users
 comp_user = getuser()
 
-
 def timestamp():
     """
     Creates a timestamp
@@ -27,7 +26,6 @@ def timestamp():
     stamp = month + '/' + date + '/' + year + ' ' + hour + ':' + minute + ':' + sec
 
     return stamp
-
 
 def zip_files(user, inputs):
     """
