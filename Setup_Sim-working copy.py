@@ -144,7 +144,7 @@ if len(sys.argv) > 1:
                  '-sOM INPUT_FOLDER SIMULATION_NAME N_CORES | [-ncln] -m INPUT_FOLDER SIMULATION_NAME N_CORES | -r SIMULATION_NAME ]'
     parser = argparse.ArgumentParser(usage=use_string)
 
-    parser.add_argument("-new", "--new_user", action="store_true",
+    parser.add_argument("-new", "--new_user", nargs=1, action="store",
                         help="New user; create an account")
     parser.add_argument("username", type=str,
                         help="Username for simulation account")
@@ -162,7 +162,7 @@ if len(sys.argv) > 1:
                                help="Get simulation results; must provide simulation name")
     options_group.add_argument("-d", "--delete", action="store_true",
                                help="Delete account")
-    options_group.add_argument("-m", "--mock_model", nargs=2, type=str, action="store",
+    options_group.add_argument("-m", "--mock_model", nargs=3, type=str, action="store",
                                help="mock model; returns uploaded input")
 
     args = parser.parse_args()
@@ -196,7 +196,8 @@ else:
 
     # Start specified tasks
     if args.new_user:
-        users.add_user(args.username, True)
+        print args.new_user
+        users.add_user(args.username, args.new_user[0], True)
     elif args.delete:
         users.delete_account(True)
     else:
@@ -209,15 +210,15 @@ else:
 
     if args.EMOD:
 
-        if users.curr_user.add_sim(args.EMOD[1], args.EMOD[0], "EMOD", True, del_VM) is 0:
+        if users.curr_user.add_sim("EMOD", args.EMOD[1], args.EMOD[0], args.EMOD[2], True, del_VM) is 0:
             users.save_user()
             pickle.dump(users.user_list, file(f, 'w'))
     elif args.OpenMalaria:
-        if users.curr_user.add_sim(args.OpenMalaria[1], args.OpenMalaria[0], "OM", True, del_VM) is 0:
+        if users.curr_user.add_sim("OM", args.OpenMalaria[1], args.OpenMalaria[0], args.OpenMalaria[2], True, del_VM) is 0:
             users.save_user()
             pickle.dump(users.user_list, file(f, 'w'))
     elif args.mock_model:
-        if users.curr_user.add_sim(args.mock_model[1], args.mock_model[0], "mock", True, del_VM) is 0:
+        if users.curr_user.add_sim("mock", args.mock_model[1], args.mock_model[0], args.mock_model[2], True, del_VM) is 0:
             users.save_user()
             pickle.dump(users.user_list, file(f, 'w'))
     elif args.get_results:

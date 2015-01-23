@@ -80,3 +80,21 @@ def extract_files(file_name, username):
     z = zipfile.ZipFile(file_name + '.zip', 'r')
     z.extractall(file_name)
     z.close()
+
+#TODO cleanup function
+def cleanup(self, service="", file=""):
+    '''
+    :param service:
+    :param file:
+    :return:
+    '''
+
+    '''
+    check if cloud service given
+        check if cloud service exists
+            delete cloud service
+    check if file name given
+        check if file exists
+            delete file
+    '''
+

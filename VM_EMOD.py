@@ -7,6 +7,30 @@ from os import chdir
 import os
 import socket
 import zipfile
+import pickle
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE, formatdate
+from email import encoders
+
+global user_info
+
+def delete_vm():
+    hosted_service = sms.get_hosted_service_properties(service_name=username, embed_detail=True)
+
+    if hosted_service.deployments:
+        deployment = sms.get_deployment_by_name(username, username)
+        roles = deployment.role_list
+
+        for instance in roles:
+            if vm_name == instance.role_name:
+                if len(roles) == 1:
+                    sms.delete_deployment(service_name=username, deployment_name=username)
+                else:
+                    sms.delete_role(service_name=username, deployment_name=username, role_name=vm_name)
+                    break
 
 def send_mail( send_from, send_to, subject, text, files=[], server="localhost", port=587, username='', password='', isTls=True):
     msg = MIMEMultipart()
@@ -42,13 +66,13 @@ def upload_results():
     z.close()
 
     result = 'r-' + vm_name
-    blob_service.put_block_blob_from_path(container_name, result, 'c:/Users/Public/Sim/Output/' + user_info["sim"] + '_Results.zip')
+    blob_service.put_block_blob_from_path(container_name, result, 'c:/Users/Public/Sim/' + user_info["sim"] + '_Results.zip')
 
 
 def download_input():
-    #blob_service.get_blob_to_path(container_name, vm_name, 'c:/Users/Public/Sim/Input.zip')
+    blob_service.get_blob_to_path(container_name, vm_name, 'c:/Users/Public/Sim/Inputs.zip')
     chdir("C:/Users/Public/Sim")
-    z = zipfile.ZipFile('SimInput.zip', 'r')
+    z = zipfile.ZipFile('Inputs.zip', 'r')
     z.extractall()
     z.close()
 
@@ -83,11 +107,10 @@ blob_service = BlobService(
 try:
     download_input()
     f = "C:/Users/Public/Sim/AzureUserInfo.pickle"
+
     user_info = pickle.load(file(f))
 except:
     output.write('Could not download input from the cloud.\n')
-    output.close()
-    upload_results()
 
 ########### Run Simulation ##########
 call(["eradication.exe", "-C",  "config.json", "-O", "Output"], stdout=output)
@@ -104,7 +127,7 @@ try:
                text        = 'Hi ' + user_info['username'] + ',\n\nYour ' + user_info["sim"] + ' simulation has '
                              'finished running. Look for your results below.\n\nThanks for using VecNet Azure '
                              'resources!\nThe VecNet Team',
-               files       = ['c:/Users/Public/Sim/Output/' + user_info["sim"] + '_Results.zip'],
+               files       = ['c:/Users/Public/Sim/' + user_info["sim"] + '_Results.zip'],
                server      = "smtp.gmail.com",
                port        = 587,
                username    = 'vecnet.results',
@@ -113,5 +136,5 @@ try:
 
 ############# Exit Script #############
 finally:
-    exit(1)
+    delete_vm()
 

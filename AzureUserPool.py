@@ -15,7 +15,7 @@ class AzureUserPool:
         self.user_list = {}
         self.curr_user = AzureUser.AzureUser()
 
-    def add_user(self, name="", ARG=False):
+    def add_user(self, name="", email="", ARG=False):
         """
         The provided username is used to to create a new 'account' where simulations
         can be stored and accessed. The client's username is used to create a cloud service
@@ -32,6 +32,11 @@ class AzureUserPool:
 
         if ARG:
             self.curr_user.username = name
+            self.curr_user.email = email
+
+            if not validate_email(self.curr_user.email):
+                stderr.write("\nEmail invalid")
+                exit(1)
 
             if not services_available:
                 stderr.write('This Azure subscription has reached capacity. To delete an old account, use the -d flag.')

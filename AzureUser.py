@@ -20,7 +20,7 @@ class AzureUser:
         self.email = ""
         self.user_info = {}
 
-    def add_sim(self, proj_name="", user_input="", sim_type="mock", ARG=False, DEL=False):
+    def add_sim(self, sim_type="mock", proj_name="", user_input="", num_cores=1, ARG=False, DEL=False):
         """
         Adds simulation to the user's list of projects. Calls setup_sim and curr_sim.simulation to configure the new
         project and actually deploy the simulation
@@ -39,10 +39,8 @@ class AzureUser:
         if ARG:
             self.curr_sim.name   = proj_name
             self.curr_sim.input  = user_input
-            self.curr_sim.cores  = 1
+            self.curr_sim.cores  = num_cores
             self.curr_sim.tstamp = AzureTools.timestamp()
-
-            print proj_name
 
             ## Check Project Name is Unique and Valid ###
             valid = self.curr_sim.check_name(proj_name)

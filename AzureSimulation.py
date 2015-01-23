@@ -100,17 +100,20 @@ class AzureSimulation:
         ######### Create OS Hard Disk #########
         if DEL:
             if sim_type == "EMOD":
-                image_name = 'EMOD-OS-os-2014-07-09'
+                print "email version"
+                image_name = 'emod-email-os-2015-01-22' #EMOD-OS-os-2014-07-09'
             elif sim_type == "OM":
+                print "OM model"
                 image_name = 'mock-model2-os-2014-07-10'
             elif sim_type == "mock":
+                print "mock model"
                 image_name = 'mock-model2-os-2014-07-10'
             else:
                 stderr.write('Error')
                 exit(1)
         else:
             if sim_type == "EMOD":
-                image_name = 'no-delete-EMOD2-os-2014-09-19'
+                image_name = 'emod-email-noDel-os-2015-01-22' #'no-delete-EMOD2-os-2014-09-19'
             elif sim_type == "OM":
                 image_name = 'no-delete-Mock-os-2014-09-17'
             elif sim_type == "mock":
@@ -149,18 +152,19 @@ class AzureSimulation:
         endpoint_config.input_endpoints.input_endpoints.append(endpoint1)
 
         ############# Create VM #############
-        if self.cores == 1:
+        if int(self.cores) == 1:
             core_size = 'Small'
-        elif self.cores == 2:
+        elif int(self.cores) == 2:
             core_size = 'Medium'
-        elif self.cores == 4:
+        elif int(self.cores) == 4:
             core_size = 'Large'
-        elif self.cores == 8:
+        elif int(self.cores) == 8:
             core_size = 'Extra Large'
-        elif self.cores == 16:
+        elif int(self.cores) == 16:
             core_size = 'A9'
         else:
             stderr.write('Core size not available. Options: 1, 2, 4, 8, 16\n')
+            print self.cores
             exit(1)
 
         # Check that there are cores available
@@ -169,7 +173,7 @@ class AzureSimulation:
         start_time = time()
         while (time() - start_time) < 180:
             subscription = sms.get_subscription()
-            cores_available = subscription.max_core_count - (subscription.current_core_count + self.cores)
+            cores_available = subscription.max_core_count - (subscription.current_core_count + int(self.cores))
             if cores_available < 0:
                 if not message_given:
                     print 'No cores are available for usage at this time. Please, wait until a ' + str(self.cores) + '-core VM can be generated...\n'
